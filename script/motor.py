@@ -89,6 +89,7 @@ def plotter():
     plt.grid(color='k', linestyle='-', linewidth=0.5)
     plt.legend()
     plt.show()
+    return fit_m, fit_c
 
 
 
