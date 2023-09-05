@@ -67,7 +67,7 @@ def plotter():
         return y
     
     # plot_ylist = getThrottle()
-    plot_ylist = getCurrent()
+    plot_ylist = getThrottle()
     plot_xlist = getThrust()
 
     xdata = np.asarray(plot_xlist)
@@ -94,11 +94,11 @@ def plotter():
 
 def main():
     # getThrottle()
-    plotter()
     # getThrust()
     # getCurrent()
     # getRPM()
     # getPower()
+    plotter()
 
 
 if __name__ == "__main__":
