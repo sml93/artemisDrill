@@ -62,7 +62,6 @@ def getPower():
 
 
 def plotter():
-
     def linear(x, m, c):
         y = m*x + c
         return y

@@ -1,15 +1,20 @@
 # For Resistograph
 
 import rospy
+import motor
 import numpy as np
 
 from ceilingEffect import thrustCE
-from motorThrust import thrustMotor
+# from motorThrust import thrustMotor
 
 
-class resistograph:
+print(motor.getThrust())
+
+class resistograph():
     def __init__(self):
         ''' init params '''
+        # global motorThrust, motorThrottle
+
         self.angVel = 10
         self.k_sr = 1
         self.r_prop = 5/39.37
@@ -18,7 +23,9 @@ class resistograph:
 
         self.force_ce = 0
         self.force_thrust = 0
-        pass
+
+        # self.motorThrottle = motorThrust
+        # self.motorThrust = motorThrottle
 
     def ceilingEffect(self):
         ''' to get ceiling effect force '''
@@ -50,7 +57,12 @@ class resistograph:
         ''' helper function for plotting resistograph '''
         pass
 
+    def main(self):
+        # print(self.motorThrottle)
+        print('ok')
 
+
+# print(motor.getThrust())
 
 if __name__ == "__main":
     try:
