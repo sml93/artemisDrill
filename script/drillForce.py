@@ -59,7 +59,7 @@ class resistograph():
     def ceiling_drill(self):
         ''' function for ceiling drilling '''
         thrustEst_N = (4*self.thrustEst/1000.0) * 9.81
-        ceiling_force = self.force_ce + thrustEst_N
+        ceiling_force = 4*self.force_ce + thrustEst_N
         print (ceiling_force)
 
     
