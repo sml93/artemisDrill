@@ -20,6 +20,8 @@ class resistograph():
         self.inputVel = 5
         self.force_ce = 0
         self.thrustEst = 0
+        self.mg = 750/1000 * 9.81
+        self.spring_force = 0
 
         self.throttle = throttle
         self.rpm = rpm
@@ -59,7 +61,7 @@ class resistograph():
     def ceiling_drill(self):
         ''' function for ceiling drilling '''
         thrustEst_N = (4*self.thrustEst/1000.0) * 9.81
-        ceiling_force = 4*self.force_ce + thrustEst_N
+        ceiling_force = 4*self.force_ce + thrustEst_N -self.mg - self.spring_force
         print (ceiling_force)
 
     
@@ -79,7 +81,7 @@ class resistograph():
 
 
 def main():
-    run = resistograph(40, 0, 0, 0, 0.1)
+    run = resistograph(100, 0, 0, 0, 0.1)
     run.getThrustEst()
     run.ceilingEffect()
     run.ceiling_drill()

@@ -14,7 +14,7 @@ void setup()
 {
   Serial.begin(9600);
    pinMode(sen,INPUT);
-  Serial.print(" \
+  //Serial.print(" \
  please start the motor at least 3   seconds prior.\
 ");
   delay(3000);
@@ -34,8 +34,7 @@ void loop()
     tnet = (konst*rad)/vel;               //time = (2*pi*radius)/velocity.
     rpm = (60000)/tnet;                //   time in ms to minutes and then to rpm conversion step.
   }
-  Serial.print("\
-   The rpm is : "); 
+  Serial.print("RPM: "); 
   Serial.println( int(rpm) );
 
 }
