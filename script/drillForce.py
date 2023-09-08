@@ -6,8 +6,10 @@ import numpy as np
 ## Helper functions
 import motor
 import linear_cf
+import convert
 
 from ceilingEffect import thrustCE
+from matplotlib import pyplot as plt
 
 
 class resistograph():
@@ -29,6 +31,8 @@ class resistograph():
 
         self.throttle = throttle
         self.rpm = rpm
+        self.rpm_list = []
+        self.curr_motor_list = []
         self.curr_motor = curr_motor
         self.curr_drill = curr_drill
         self.cdist = cdist
@@ -42,8 +46,6 @@ class resistograph():
         self.epsilon = self.Ftc/(self.widthbit*self.depthCut)
         self.sigma = 0.0025
         self.lamb = 0.0001
-
-
 
         self.motorThrust = motor.getThrust()
         self.motorThrottle = motor.getThrottle()
@@ -90,7 +92,6 @@ class resistograph():
         return self.epsilon*(self.widthbit*self.depthCut)
 
 
-
     def drillForce(self):
         ''' function to calculate drill resistance - check iPad '''
         resist = (self.zeta*self.epsilon*self.FR)/(2*self.rpm) + (2*self.sigma*self.lamb)
@@ -105,14 +106,34 @@ class resistograph():
     
     def plotter(self):
         ''' function for plotting resistograph '''
-        pass
+        plt.figure()
+        plt.plot(range(len(self.rpm_list)), self.rpm_list)
+        plt.show()
+        plt.figure()
+        plt.plot(range(len(self.curr_motor_list)), self.curr_motor_list)
+        plt.show()
+
+
+    def getLists(self):
+        rpm_list, curr_motor_list = convert.converter()
+        for i in range(len(rpm_list)):
+            self.rpm_list.append(rpm_list[i])
+            print("RPM: ", self.rpm_list[i])
+        for i in range(len(curr_motor_list)):
+            self.curr_motor_list.append(curr_motor_list[i])
+            print("Current: ", self.curr_motor_list[i])
+
+
 
 
 def main():
-    run = resistograph(100, 0, 0, 0, 0.1)
+    run = resistograph(100, 500, 0, 0, 0.1)
     run.getThrustEst()
     run.ceilingEffect()
     run.ceilingFeed()
+    run.getLists()
+    run.plotter()
+
 
 
 if __name__ == "__main__":

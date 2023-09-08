@@ -26,15 +26,15 @@ def run_sensor():
     while keep_going:
         b = ser.readline()
         string_n = b.decode()
-        string = string_n.strip("")
-        print(int(string))
-        data.append(int(string))
+        string = string_n.strip("Current: ")
+        print(float(string))
+        data.append(string)
     print('out of loop')
     with open('curr_reading.csv', 'w') as f:
         writer = csv.writer(f)
         for line in data:
             # print(line)
-            writer.writerow(line)
+            writer.writerow([line])
         print('writing done')
 
 
