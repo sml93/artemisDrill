@@ -7,6 +7,7 @@ import numpy as np
 import motor
 import linear_cf
 import convert
+import logExtract
 
 from ceilingEffect import thrustCE
 from matplotlib import pyplot as plt
@@ -33,6 +34,7 @@ class resistograph():
         self.rpm = rpm
         self.rpm_list = []
         self.curr_motor_list = []
+        self.thrust_list = []
         self.curr_motor = curr_motor
         self.curr_drill = curr_drill
         self.cdist = cdist
@@ -83,6 +85,11 @@ class resistograph():
         thrustEst_N = (4*self.thrustEst/1000.0) * 9.81
         self.ceiling_feed = (4*self.force_ce + thrustEst_N) - (self.mg + self.spring_forceL)
         print (self.ceiling_feed)
+        for i in range(len(self.thrust_list)):
+            Est_thrust = (4*self.thrust_list[i]*1746.84)/1000 * 9.81
+            self.ceiling_feed = (4*self.force_ce + Est_thrust) - (self.mg + self.spring_forceL)
+            print (self.ceiling_feed)
+        
 
 
     def F_nc(self):
@@ -110,7 +117,9 @@ class resistograph():
         plt.plot(range(len(self.rpm_list)), self.rpm_list)
         plt.show()
         plt.figure()
-        plt.plot(range(len(self.curr_motor_list)), self.curr_motor_list)
+        # plt.plot(range(len(self.curr_motor_list)), self.curr_motor_list)
+        # plt.show()
+        plt.plot(range(len(self.thrust_list)), self.thrust_list)
         plt.show()
 
 
@@ -118,10 +127,18 @@ class resistograph():
         rpm_list, curr_motor_list = convert.converter()
         for i in range(len(rpm_list)):
             self.rpm_list.append(rpm_list[i])
-            print("RPM: ", self.rpm_list[i])
+            # print("RPM: ", self.rpm_list[i])
+        # print(len(self.rpm_list))
+
         for i in range(len(curr_motor_list)):
             self.curr_motor_list.append(curr_motor_list[i])
-            print("Current: ", self.curr_motor_list[i])
+            # print("Current: ", self.curr_motor_list[i])
+        
+        thrust_list, truncated_list = logExtract.getThrust()
+        for i in range(len(truncated_list)):
+            self.thrust_list.append(truncated_list[i])
+            # print('Thrust: ', self.thrust_list[i])
+        # print(len(self.thrust_list))
 
 
 
@@ -129,9 +146,9 @@ class resistograph():
 def main():
     run = resistograph(100, 500, 0, 0, 0.1)
     run.getThrustEst()
+    run.getLists()
     run.ceilingEffect()
     run.ceilingFeed()
-    run.getLists()
     run.plotter()
 
 
