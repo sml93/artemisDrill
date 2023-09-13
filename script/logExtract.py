@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from itertools import islice
 
-df = openpyxl.load_workbook("log0_7sept.xlsx")
+# df = openpyxl.load_workbook("log0_7sept.xlsx")
+df = openpyxl.load_workbook("log28_11Sept.xlsx")
 
 df1 = df.active
 
@@ -26,11 +27,11 @@ def getThrust():
             # print(col[row].value)
             thrust_list.append(col[row].value)
     # print(thrust_list)
-    reduced_TList = downsample_to_proportion(range(0,492), 0.2)
+    reduced_TList = downsample_to_proportion(range(0,490), 0.2)
     # print(len(reduced_TList))
     for i in range(len(reduced_TList)):
         truncate_list.append(thrust_list[reduced_TList[i]])
-    # print(truncate_list)
+    # print((truncate_list))
     return thrust_list, truncate_list
 
 

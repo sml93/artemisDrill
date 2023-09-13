@@ -8,46 +8,59 @@ import motor
 import linear_cf
 import convert
 import logExtract
+import rpmExtract
 
 from ceilingEffect import thrustCE
 from matplotlib import pyplot as plt
 
 
 class resistograph():
-    def __init__(self, throttle, rpm, curr_motor, curr_drill, cdist):
+    def __init__(self, throttle, rpm, cdist, matThickness, rpmChoice):
         ''' init params '''
         self.angVel = 10
-        self.K_srG = 1
-        self.K_srL = 1
+        self.K_srG = 0.1
+        self.K_srL = 0.2
         self.r_prop = 5/39.37
         self.z_ceiling = 0.15       # distance from UAV to ceiling
         self.inputVel = 5
         self.force_ce = 0
         self.thrustEst = 0
         self.mg = 750/1000 * 9.81
-        self.spring_forceL = cdist/self.K_srL
-        self.spring_forceG = cdist/self.K_srG
+        self.cdist = cdist
+        self.spring_forceL = self.cdist*self.K_srL
+        self.spring_forceG = self.cdist*self.K_srG
         self.ceiling_feed = 0
+        self.ceiling_feed_list = []
         self.beam_feed = 0
+        self.matThickness = matThickness     # mm
+        self.feedRate = 0
+        self.rpmChoice = rpmChoice
 
+        self.cutTime = 3.
         self.throttle = throttle
         self.rpm = rpm
         self.rpm_list = []
+        self.rpm1000 = []
+        self.rpm2000 = []
+        self.rpm3000 = []
         self.curr_motor_list = []
         self.thrust_list = []
-        self.curr_motor = curr_motor
-        self.curr_drill = curr_drill
-        self.cdist = cdist
+        self.time_list = []
 
-        self.Fnc =0
-        self.Ftc = 0
+        self.Fnc =[]
+        self.Ftc = []
+        self.weightBit = []
         self.widthbit = 0.003
-        self.FR = 1
-        self.depthCut = self.FR/self.rpm
+        self.FR = 6/(2.5/60)
+        # self.depthCut = self.FR/self.rpm
+        self.depthCut = []
         self.zeta = np.tan(np.deg2rad(40))
-        self.epsilon = self.Ftc/(self.widthbit*self.depthCut)
+        # self.epsilon = self.Ftc/(self.widthbit*self.depthCut)
+        self.epsilon = 0.95
         self.sigma = 0.0025
         self.lamb = 0.0001
+        self.miu = 1    # F_tf/F_nf
+        self.ncutter = 2
 
         self.motorThrust = motor.getThrust()
         self.motorThrottle = motor.getThrottle()
@@ -67,10 +80,53 @@ class resistograph():
         self.force_ce = thrustCE(self.cdist).getThrust()
         print(self.force_ce)
 
-    
+
     def thrustForce(self):
         ''' function to get thrust force '''
         pass
+
+
+    def depthofCut(self):
+        ''' Penetration Rate = thickness / min '''
+        for i in range(len(self.ceiling_feed_list)):
+            self.feedRate = self.ceiling_feed_list[i]
+            if (3.0*9.81) <= self.feedRate < (4.0*9.81):
+                self.cutTime = 5.
+            elif (4.0*9.81) <= self.feedRate < (5.0*9.81):
+                self.cutTime = 4.
+            else: self.cutTime = 3.
+            if self.rpmChoice == 1000:
+                self.depthCut.append((self.matThickness / self.cutTime)/float(self.rpm1000[i]))
+            elif self.rpmChoice == 2000:  
+                self.depthCut.append((self.matThickness / self.cutTime)/float(self.rpm2000[i]))
+            else:
+                print(self.rpm3000[i])
+                self.depthCut.append((self.matThickness/self.cutTime)/float(self.rpm3000[i]))
+        print(self.depthCut)
+
+
+    def F_nc(self):
+        for i in range(len(self.depthCut)):
+            self.epsilon = self.Ftc/(self.widthbit*self.depthCut)
+            self.Fnc.append((self.zeta*self.epsilon*self.depthCut[i])/self.ncutter + self.ncutter(self.sigma*self.widthbit*self.lamb))
+
+
+    def F_tc(self):
+        for i in range(len(self.depthCut)):
+            self.Ftc.append(self.epsilon*(self.widthbit*self.depthCut[i]) + (self.miu*self.sigma*self.widthbit*self.lamb))
+    
+
+    def weightOnBit(self):
+        wr_list = []
+        for i in range(len(self.depthCut)):
+            self.weightBit.append((self.zeta*self.epsilon*self.depthCut[i]) + self.ncutter*self.sigma*self.lamb)
+            Wr = self.weightBit[i]/self.widthbit
+            # print(Wr)
+            wr_list.append(Wr)
+        norm = [1-(float(i)/max(wr_list)) for i in wr_list]
+        # print(norm)
+        plt.plot(range(len(norm)), norm, label='normalised_resistance')
+        plt.show()
     
 
     def beamFeed(self):
@@ -82,21 +138,16 @@ class resistograph():
     
     def ceilingFeed(self):
         ''' function for ceiling drilling '''
-        thrustEst_N = (4*self.thrustEst/1000.0) * 9.81
-        self.ceiling_feed = (4*self.force_ce + thrustEst_N) - (self.mg + self.spring_forceL)
-        print (self.ceiling_feed)
+        # thrustEst_N = (4*self.thrustEst/1000.0) * 9.81
+        # self.ceiling_feed = (4*self.force_ce + thrustEst_N) - (self.mg + self.spring_forceL)
         for i in range(len(self.thrust_list)):
             Est_thrust = (4*self.thrust_list[i]*1746.84)/1000 * 9.81
             self.ceiling_feed = (4*self.force_ce + Est_thrust) - (self.mg + self.spring_forceL)
-            print (self.ceiling_feed)
-        
-
-
-    def F_nc(self):
-        pass
-
-    def F_tc(self):
-        return self.epsilon*(self.widthbit*self.depthCut)
+            # print (self.ceiling_feed)
+            self.ceiling_feed_list.append(self.ceiling_feed)
+        # print(self.ceiling_feed_list)
+        plt.plot(range(len(self.ceiling_feed_list)), self.ceiling_feed_list)
+        plt.show()
 
 
     def drillForce(self):
@@ -108,7 +159,8 @@ class resistograph():
     
     def powerTransmission(self):
         ''' function to calculate power transmission '''
-        pass
+        r_shaft = (np.power(x_shaft,2) + np.power(y_shaft,2))/(4*y_shaft)
+        return r_shaft
 
     
     def plotter(self):
@@ -124,15 +176,20 @@ class resistograph():
 
 
     def getLists(self):
-        rpm_list, curr_motor_list = convert.converter()
+        rpm_list, time_list = convert.converter()
         for i in range(len(rpm_list)):
             self.rpm_list.append(rpm_list[i])
             # print("RPM: ", self.rpm_list[i])
         # print(len(self.rpm_list))
 
-        for i in range(len(curr_motor_list)):
-            self.curr_motor_list.append(curr_motor_list[i])
+        # for i in range(len(curr_motor_list)):
+        #     self.curr_motor_list.append(curr_motor_list[i])
+        #     # print("Current: ", self.curr_motor_list[i])
+
+        for i in range(len(time_list)):
+            self.time_list.append(time_list[i])
             # print("Current: ", self.curr_motor_list[i])
+
         
         thrust_list, truncated_list = logExtract.getThrust()
         for i in range(len(truncated_list)):
@@ -140,15 +197,19 @@ class resistograph():
             # print('Thrust: ', self.thrust_list[i])
         # print(len(self.thrust_list))
 
+        self.rpm1000, self.rpm2000, self.rpm3000 = rpmExtract.getRPM()
+
 
 
 
 def main():
-    run = resistograph(100, 500, 0, 0, 0.1)
+    run = resistograph(100, 500, 0.1, 10, 3000)
     run.getThrustEst()
     run.getLists()
     run.ceilingEffect()
     run.ceilingFeed()
+    run.depthofCut()
+    run.weightOnBit()
     run.plotter()
 
 
