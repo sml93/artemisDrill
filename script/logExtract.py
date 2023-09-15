@@ -6,7 +6,11 @@ from scipy.optimize import curve_fit
 from itertools import islice
 
 # df = openpyxl.load_workbook("log0_7sept.xlsx")
-df = openpyxl.load_workbook("log28_11Sept.xlsx")
+# df = openpyxl.load_workbook("log28_11Sept.xlsx")
+# df = openpyxl.load_workbook("Exp2/log31_11sept.xlsx")
+# df = openpyxl.load_workbook("Exp3/log33_11sept.xlsx")
+df = openpyxl.load_workbook("Exp4_beam/log48_12sept.xlsx")
+# df = openpyxl.load_workbook("Exp5_beam/log49_12sept.xlsx")
 
 df1 = df.active
 

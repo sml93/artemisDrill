@@ -2,11 +2,12 @@
 ## Import basic libraries
 import rospy
 import numpy as np
+import xlsxwriter
 
 ## Helper functions
 import motor
 import linear_cf
-import convert
+# import convert
 import logExtract
 import rpmExtract
 
@@ -46,6 +47,9 @@ class resistograph():
         self.curr_motor_list = []
         self.thrust_list = []
         self.time_list = []
+        self.norm = []
+        # self.cdist_list = []
+        self.timeDrill = []
 
         self.Fnc =[]
         self.Ftc = []
@@ -90,19 +94,21 @@ class resistograph():
         ''' Penetration Rate = thickness / min '''
         for i in range(len(self.ceiling_feed_list)):
             self.feedRate = self.ceiling_feed_list[i]
+            # if self.feedRate < (3.0*9.81):
+            #     self.cutTime = 3.
             if (3.0*9.81) <= self.feedRate < (4.0*9.81):
-                self.cutTime = 5.
+                self.cutTime = 1.266          #5
             elif (4.0*9.81) <= self.feedRate < (5.0*9.81):
-                self.cutTime = 4.
-            else: self.cutTime = 3.
+                self.cutTime = 0.833          #4
+            else: self.cutTime = 0.48      #3
             if self.rpmChoice == 1000:
                 self.depthCut.append((self.matThickness / self.cutTime)/float(self.rpm1000[i]))
             elif self.rpmChoice == 2000:  
                 self.depthCut.append((self.matThickness / self.cutTime)/float(self.rpm2000[i]))
             else:
-                print(self.rpm3000[i])
+                # print(self.rpm3000[i])
                 self.depthCut.append((self.matThickness/self.cutTime)/float(self.rpm3000[i]))
-        print(self.depthCut)
+        # print(self.depthCut)
 
 
     def F_nc(self):
@@ -123,9 +129,15 @@ class resistograph():
             Wr = self.weightBit[i]/self.widthbit
             # print(Wr)
             wr_list.append(Wr)
-        norm = [1-(float(i)/max(wr_list)) for i in wr_list]
-        # print(norm)
-        plt.plot(range(len(norm)), norm, label='normalised_resistance')
+        self.norm = [(float(i)/max(wr_list)) for i in wr_list]
+        print(self.norm)
+        # plt.plot(range(len(self.norm)), self.norm, label='data@5000RPM')
+        plt.plot(self.timeDrill, self.norm, label='data@3000RPM')
+        plt.title('Beam Drilling @ 3000rpm')
+        plt.xlabel('Duration of drill [secs]')
+        plt.ylabel('Normalised drilling resistance')
+        # plt.xlim([30,120])
+        plt.legend()
         plt.show()
     
 
@@ -146,7 +158,9 @@ class resistograph():
             # print (self.ceiling_feed)
             self.ceiling_feed_list.append(self.ceiling_feed)
         # print(self.ceiling_feed_list)
-        plt.plot(range(len(self.ceiling_feed_list)), self.ceiling_feed_list)
+        plt.plot(range(len(self.ceiling_feed_list)), self.ceiling_feed_list, label='data')
+        plt.title('Ceiling Feedrate')
+        plt.legend()
         plt.show()
 
 
@@ -176,19 +190,19 @@ class resistograph():
 
 
     def getLists(self):
-        rpm_list, time_list = convert.converter()
-        for i in range(len(rpm_list)):
-            self.rpm_list.append(rpm_list[i])
-            # print("RPM: ", self.rpm_list[i])
-        # print(len(self.rpm_list))
+        # rpm_list, time_list = convert.converter()
+        # for i in range(len(rpm_list)):
+        #     self.rpm_list.append(rpm_list[i])
+        #     # print("RPM: ", self.rpm_list[i])
+        # # print(len(self.rpm_list))
 
-        # for i in range(len(curr_motor_list)):
-        #     self.curr_motor_list.append(curr_motor_list[i])
+        # # for i in range(len(curr_motor_list)):
+        # #     self.curr_motor_list.append(curr_motor_list[i])
+        # #     # print("Current: ", self.curr_motor_list[i])
+
+        # for i in range(len(time_list)):
+        #     self.time_list.append(time_list[i])
         #     # print("Current: ", self.curr_motor_list[i])
-
-        for i in range(len(time_list)):
-            self.time_list.append(time_list[i])
-            # print("Current: ", self.curr_motor_list[i])
 
         
         thrust_list, truncated_list = logExtract.getThrust()
@@ -197,8 +211,25 @@ class resistograph():
             # print('Thrust: ', self.thrust_list[i])
         # print(len(self.thrust_list))
 
-        self.rpm1000, self.rpm2000, self.rpm3000 = rpmExtract.getRPM()
+        # self.rpm1000, self.rpm2000, self.rpm3000 = rpmExtract.getRPM()
+        self.rpm3000 = rpmExtract.getRPM()
+        self.timeDrill = rpmExtract.getTime()
+        self.timeDrill.pop(0)
+        # self.cdist_list = cdistExtract.getCdist()
 
+
+
+
+    def saveData(self):
+        workbook = xlsxwriter.Workbook("normNew_beam5.xlsx")
+        worksheet = workbook.add_worksheet()
+
+        i = 1
+        for line in range(len(self.norm)):
+            worksheet.write(i, 1, self.norm[line])
+            worksheet.write(i, 0, self.timeDrill[line])
+            i += 1
+        workbook.close()
 
 
 
@@ -210,6 +241,7 @@ def main():
     run.ceilingFeed()
     run.depthofCut()
     run.weightOnBit()
+    run.saveData()
     run.plotter()
 
 
