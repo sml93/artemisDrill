@@ -35,14 +35,14 @@ def run_sensor():
         data.append(string)
         time_list.append(time_count)
     print('out of loop')
-    with open('RPM_drill3_1000rpm_12sept.csv', 'w') as f:
+    with open('RPM_22sept_airena.csv', 'w') as f:
         writer = csv.writer(f)
         for line in data:
             # print(line)
             writer.writerow([line])
         print('writing data done')
 
-    with open('time_drill3_1000rpm_12sept.csv', 'w') as k:
+    with open('time_22sept_airena.csv', 'w') as k:
         writer = csv.writer(k)
         for i in range(len(time_list)):
             writer.writerow([time_list[i]])

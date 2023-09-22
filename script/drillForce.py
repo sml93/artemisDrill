@@ -79,9 +79,9 @@ class resistograph():
         print(self.thrustEst)
 
     
-    def ceilingEffect(self):
+    def ceilingEffect(self, dist):
         ''' function to get ceiling effect force '''
-        self.force_ce = thrustCE(self.cdist).getThrust()
+        self.force_ce = thrustCE(dist).getThrust()
         print(self.force_ce)
 
 
@@ -93,7 +93,7 @@ class resistograph():
     def depthofCut(self):
         ''' Penetration Rate = thickness / min '''
         for i in range(len(self.ceiling_feed_list)):
-            self.feedRate = self.ceiling_feed_list[i]
+            self.feedRate = self.ceiling_feed_list[i] + self.dist[i]
             # if self.feedRate < (3.0*9.81):
             #     self.cutTime = 3.
             if (3.0*9.81) <= self.feedRate < (4.0*9.81):
@@ -241,7 +241,7 @@ def main():
     run.ceilingFeed()
     run.depthofCut()
     run.weightOnBit()
-    run.saveData()
+    # run.saveData()
     run.plotter()
 
 
