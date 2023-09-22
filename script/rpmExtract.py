@@ -3,13 +3,15 @@ from itertools import islice
 
 # df = openpyxl.load_workbook("csv/RPM_record4.xlsx")
 # df = openpyxl.load_workbook("Exp4_beam/RPM_beam4.xlsx")
-df = openpyxl.load_workbook("Exp5_beam/RPM_beam5.xlsx")
+# df = openpyxl.load_workbook("Exp5_beam/RPM_beam5.xlsx")
+df = openpyxl.load_workbook("normalized_RPM.xlsx")
 
 df1 = df.active
 
 # df_time = openpyxl.load_workbook("csv/time_record4.xlsx")
 # df_time = openpyxl.load_workbook("Exp4_beam/time_beam4.xlsx")
-df_time = openpyxl.load_workbook("Exp5_beam/time_beam5.xlsx")
+# df_time = openpyxl.load_workbook("Exp5_beam/time_beam5.xlsx")
+df_time = openpyxl.load_workbook("time_22sept_airena.xlsx")
 
 df1_time = df_time.active
 
@@ -62,7 +64,7 @@ def getdrillRPM():
 
 def getRPM():
   for row in range(2, df1.max_row):
-    for col in df1.iter_cols(1,1):
+    for col in df1.iter_cols(4,4):
       rpm_1000.append(col[row].value)
     # for col in df1.iter_cols(7,7):
     #   rpm_2000.append(col[row].value)
@@ -77,7 +79,7 @@ def getRPM():
   # ext_3000 = downsample_to_proportion(range(0,49), 1.0)
   # for i in range(len(ext_3000)):
   #   new_3000.append(float(rpm_3000[ext_3000[i]]))
-  # print(new_3000)
+  print(new_3000)
   # print(len(new_3000))
   return new_3000
 

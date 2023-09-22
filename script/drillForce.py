@@ -50,6 +50,7 @@ class resistograph():
         self.norm = []
         # self.cdist_list = []
         self.timeDrill = []
+        self.dist = []
 
         self.Fnc =[]
         self.Ftc = []
@@ -76,29 +77,46 @@ class resistograph():
         ''' function for estimated thrust force - motor spec sheet'''
         self.fit_m, self.fit_c = linear_cf.solveLinear(self.motorThrust, self.motorThrottle)
         self.thrustEst = linear_cf.linear_roots(self.throttle, self.fit_m, self.fit_c)
-        print(self.thrustEst)
+        print("Est_Thrust: ", self.thrustEst)
 
     
-    def ceilingEffect(self, dist):
+    def ceilingEffect(self):
         ''' function to get ceiling effect force '''
-        self.force_ce = thrustCE(dist).getThrust()
-        print(self.force_ce)
+        for i in range(len(self.dist)):
+            self.force_ce = thrustCE(self.dist[i]).getThrust()
+            print("F_ce: ", self.force_ce)
 
 
     def thrustForce(self):
         ''' function to get thrust force '''
         pass
 
+    def getDist(self):
+        ''' function to get ceiling dist '''
+        for k in range(0,44,1):
+            self.dist.append(round(k*2.2093/100,3))
+        # print(self.dist)
+        x = self.dist[-1]
+        for k in range(44,78,1):
+            x += 0.0606/100
+            self.dist.append(round(x,3))
+        x = 95/100
+        for k in range(78,102,1):
+            x -= 4.1304/100
+            self.dist.insert(k,round(x,3))
+        self.dist.pop(-1)
+
 
     def depthofCut(self):
+        self.getDist()
         ''' Penetration Rate = thickness / min '''
         for i in range(len(self.ceiling_feed_list)):
-            self.feedRate = self.ceiling_feed_list[i] + self.dist[i]
+            self.feedRate = self.ceiling_feed_list[i] * self.dist[i]
             # if self.feedRate < (3.0*9.81):
             #     self.cutTime = 3.
-            if (3.0*9.81) <= self.feedRate < (4.0*9.81):
+            if (1.0*9.81) <= self.feedRate < (2.0*9.81):
                 self.cutTime = 1.266          #5
-            elif (4.0*9.81) <= self.feedRate < (5.0*9.81):
+            elif (2.0*9.81) <= self.feedRate < (3.0*9.81):
                 self.cutTime = 0.833          #4
             else: self.cutTime = 0.48      #3
             if self.rpmChoice == 1000:
@@ -108,7 +126,8 @@ class resistograph():
             else:
                 # print(self.rpm3000[i])
                 self.depthCut.append((self.matThickness/self.cutTime)/float(self.rpm3000[i]))
-        # print(self.depthCut)
+        # print("DepthCut: ", self.depthCut)
+        # print(len(self.depthCut))
 
 
     def F_nc(self):
@@ -129,14 +148,16 @@ class resistograph():
             Wr = self.weightBit[i]/self.widthbit
             # print(Wr)
             wr_list.append(Wr)
-        self.norm = [(float(i)/max(wr_list)) for i in wr_list]
-        print(self.norm)
+        # self.norm = [1-(float(i)/max(wr_list)) for i in wr_list]
+        self.norm = [1-(float(i)/max(wr_list)) for i in wr_list]
+        print("selfNorm: ", self.norm)
         # plt.plot(range(len(self.norm)), self.norm, label='data@5000RPM')
         plt.plot(self.timeDrill, self.norm, label='data@3000RPM')
-        plt.title('Beam Drilling @ 3000rpm')
+        plt.title('Branch Drilling @ 3000rpm')
         plt.xlabel('Duration of drill [secs]')
         plt.ylabel('Normalised drilling resistance')
-        # plt.xlim([30,120])
+        # plt.xlim([0,95])
+        # plt.ylim([0.5,1.1])
         plt.legend()
         plt.show()
     
@@ -158,7 +179,7 @@ class resistograph():
             # print (self.ceiling_feed)
             self.ceiling_feed_list.append(self.ceiling_feed)
         # print(self.ceiling_feed_list)
-        plt.plot(range(len(self.ceiling_feed_list)), self.ceiling_feed_list, label='data')
+        plt.plot(range(len(self.ceiling_feed_list)), self.ceiling_feed_list, label='feedforce')
         plt.title('Ceiling Feedrate')
         plt.legend()
         plt.show()
@@ -214,7 +235,7 @@ class resistograph():
         # self.rpm1000, self.rpm2000, self.rpm3000 = rpmExtract.getRPM()
         self.rpm3000 = rpmExtract.getRPM()
         self.timeDrill = rpmExtract.getTime()
-        self.timeDrill.pop(0)
+        # self.timeDrill.pop(0)
         # self.cdist_list = cdistExtract.getCdist()
 
 
@@ -237,7 +258,7 @@ def main():
     run = resistograph(100, 500, 0.1, 10, 3000)
     run.getThrustEst()
     run.getLists()
-    run.ceilingEffect()
+    # run.ceilingEffect()
     run.ceilingFeed()
     run.depthofCut()
     run.weightOnBit()

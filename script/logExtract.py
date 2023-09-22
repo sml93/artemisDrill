@@ -21,6 +21,7 @@ thrust_list = []
 reduced_TList = []
 truncate_list = []
 reduced_TList2 = []
+final_list = []
 
 
 ''' Get thrust values '''   
@@ -40,8 +41,10 @@ def getThrust():
     # print(len(reduced_TList))
     for i in range(len(reduced_TList)):
         truncate_list.append(thrust_list[reduced_TList[i]])
-    # print((truncate_list))
-    return thrust_list, truncate_list
+    x = [0 if v is None else v for v in truncate_list]
+    final_list = x 
+    print((final_list))
+    return thrust_list, final_list
 
 
 
