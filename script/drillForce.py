@@ -164,7 +164,7 @@ class resistograph():
         plt.ylabel('Normalised drilling resistance')
         # plt.xlim([0,95])
         # plt.ylim([0.5,1.1])
-        plt.legend()
+        plt.legend(loc='')
         plt.show()
     
 
