@@ -14,6 +14,8 @@ import rpmExtract
 from ceilingEffect import thrustCE
 from matplotlib import pyplot as plt
 
+tnrfont = {'fontname':'Times New Roman'}
+
 
 class resistograph():
     def __init__(self, throttle, rpm, cdist, matThickness, rpmChoice):
@@ -152,7 +154,11 @@ class resistograph():
         self.norm = [1-(float(i)/max(wr_list)) for i in wr_list]
         print("selfNorm: ", self.norm)
         # plt.plot(range(len(self.norm)), self.norm, label='data@5000RPM')
-        plt.plot(self.timeDrill, self.norm, label='data@3000RPM')
+        plt.rcParams["font.family"] = "serif"
+        plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
+        # plt.rcParams.update({'font.weight': 'bold'})
+        plt.rcParams.update({'font.size': 22})
+        plt.plot(self.timeDrill, self.norm, label='data@3000RPM', linewidth=2.5)
         plt.title('Branch Drilling @ 3000rpm')
         plt.xlabel('Duration of drill [secs]')
         plt.ylabel('Normalised drilling resistance')
@@ -180,6 +186,8 @@ class resistograph():
             self.ceiling_feed_list.append(self.ceiling_feed)
         # print(self.ceiling_feed_list)
         plt.plot(range(len(self.ceiling_feed_list)), self.ceiling_feed_list, label='feedforce')
+        plt.rcParams["font.family"] = "serif"
+        plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
         plt.title('Ceiling Feedrate')
         plt.legend()
         plt.show()
@@ -202,11 +210,15 @@ class resistograph():
         ''' function for plotting resistograph '''
         plt.figure()
         plt.plot(range(len(self.rpm_list)), self.rpm_list)
+        plt.rcParams["font.family"] = "serif"
+        plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
         plt.show()
         plt.figure()
         # plt.plot(range(len(self.curr_motor_list)), self.curr_motor_list)
         # plt.show()
         plt.plot(range(len(self.thrust_list)), self.thrust_list)
+        plt.rcParams["font.family"] = "serif"
+        plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
         plt.show()
 
 
