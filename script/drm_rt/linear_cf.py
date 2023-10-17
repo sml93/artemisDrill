@@ -22,3 +22,4 @@ def solveLinear(plot_xlist, plot_ylist):
 
   # fit_y = linear(xdata, fit_m, fit_c)
   return fit_m, fit_c
+  

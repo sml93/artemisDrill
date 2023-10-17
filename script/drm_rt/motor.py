@@ -67,8 +67,9 @@ def plotter():
         return y
     
     # plot_ylist = getThrottle()
-    plot_ylist = getThrottle()
+    # plot_ylist = getThrottle()
     plot_xlist = getThrust()
+    plot_ylist = getCurrent()
 
     xdata = np.asarray(plot_xlist)
     ydata = np.asarray(plot_ylist)

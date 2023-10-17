@@ -65,6 +65,7 @@ class drmRT():
     self.ncutter = 2
     self.motorThrust = motor.getThrust()
     self.motorThrottle = motor.getThrottle()
+    self.motorCurrent = motor.getCurrent()
     self.depthCut = 0
     self.matThickness = 10    # mm
     self.weightBit = 0
@@ -87,9 +88,9 @@ class drmRT():
     # rospy.Subscriber('/ranger', String, self.ranger_callback)
     rospy.Subscriber('/ranger', Float32, self.ranger_callback)
     rospy.Subscriber('/rpm', Int16, self.rpm_callback)
-    # rospy.Subscriber('/current', Float32, self.current_callback)
-    rospy.Subscriber('/throttle', Float32, self.thrust_callback)
-    self.wr_pub = rospy.Publisher('/wr', Float32, queue_size=1)
+    rospy.Subscriber('/current', Float32, self.current_callback)
+    # rospy.Subscriber('/throttle', Float32, self.thrust_callback)
+    self.wr_pub = rospy.Publisher('/wbr', Float32, queue_size=1)
     self.wr_msg = Float32()
 
 
@@ -100,17 +101,17 @@ class drmRT():
 
   def rpm_callback(self, msg):
     self.rpm = msg.data
-    rospy.loginfo('rpm: {0:.2f} m'.format(self.rpm))
+    rospy.loginfo('rpm: {0:.2f}'.format(self.rpm))
 
 
   def current_callback(self, msg):
     self.current = msg.data
-    rospy.loginfo('current: {0:.2f} m'.format(self.current))
+    rospy.loginfo('current: {0:.2f} A'.format(self.current))
 
 
   def thrust_callback(self, msg):
     self.UAVthrust = msg.data
-    rospy.loginfo('throttle: {0:.2f} m'.format(self.UAVthrust))
+    rospy.loginfo('throttle: {0:.2f}'.format(self.UAVthrust))
 
 
   def ce_thrust(self):
@@ -120,9 +121,11 @@ class drmRT():
 
 
   def getMotorThrust(self):
+    ''' get motor current in realtime, convert to thrust '''
     ''' get motor throttle in realtime, convert to thrust '''
-    self.fit_m, self.fit_c = linear_cf.solveLinear(self.motorThrust, self.motorThrottle)
-    self.thrustEst = linear_cf.linear_roots(self.UAVthrust, self.fit_m, self.fit_c)
+    self.fit_m, self.fit_c = linear_cf.solveLinear(self.motorThrust, self.motorCurrent)
+    self.thrustEst = linear_cf.linear(self.current, self.fit_m, self.fit_c) * 4
+    # self.thrustEst = linear_cf.linear_roots(self.UAVthrust, self.fit_m, self.fit_c)
 
 
   def getTotalThrust(self):
@@ -149,10 +152,14 @@ class drmRT():
   def drm(self):
     ''' for drm '''
     self.depthofCut()           # call prior function
-    self.weightBit = (self.zeta*self.epsilon*self.depthCut) + (self.ncutter*self.sigma*self.lamb)
-    wr = self.weightBit/self.widthbit
-    if wr > self.max_wr:
-      self.max_wr = wr
+    if self.cdist < 0.07:
+      wr = 0.0
+      self.max_wr = 0.01
+    else:
+      self.weightBit = (self.zeta*self.epsilon*self.depthCut) + (self.ncutter*self.sigma*self.lamb)
+      wr = self.weightBit/self.widthbit
+      if wr > self.max_wr:
+        self.max_wr = wr
     self.norm_wr = round((wr / self.max_wr), 3)
     self.wr_msg.data = self.norm_wr
     self.wr_pub.publish(self.wr_msg)
@@ -175,19 +182,10 @@ class drmRT():
     plt.ylabel('Normalized resistance')
     plt.xlabel('Time (HH:MM:SS)')
     plt.title('rt-DRM')
-    plt.savefig('drm_rt/figure.svg', dpi=600)
+    plt.savefig('figure.svg', dpi=600)
     plt.show()
-    # workbook = xlsxwriter.Workbook('data.xlsx')
-    # worksheet = workbook.add_worksheet('Sheet1')
-    # head = ['norm_wr', 'time']
-    # bold = workbook.add_format({'bold':True})
 
-    # worksheet.write_row(0,0,head,bold)
-    # for i in range(len(self.saveList)):
-    #   worksheet.write(i, 0, self.saveList[i])
-    #   worksheet.write(i, 1, self.timeList[i])
-    # workbook.close()
-    with open('drm_rt/data.csv', 'w') as k:
+    with open('data.csv', 'w') as k:
       writer = csv.writer(k)
       for i in range(len(self.saveList)):
         writer.writerow([self.saveList[i], self.timeList[i]])    
