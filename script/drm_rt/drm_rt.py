@@ -1,6 +1,7 @@
 #! /usr/env/bin python3
 import os
 import csv
+import time
 import rospy
 import numpy as np
 import datetime as dt
@@ -40,14 +41,14 @@ class drmRT():
 
   def init_params(self, selection):
     global max_wr, keep_going
-    ''' topic related '''
-    self.cdist = 0.05
+    ''' Topic related '''
+    self.cdist = 1.0
     self.rpm = 2000
-    self.current = 0
+    self.current = 0.01
     self.UAVthrust = 0
     self.initialRpm = 0
 
-    ''' system params '''
+    ''' System params '''
     self.selection = selection
     self.force_ce = 0
     self.K_spG = 0.1
@@ -74,6 +75,11 @@ class drmRT():
     self.max_wr = max_wr
     self.saveList = []
     self.timeList = []
+    self.thrustEstList = []
+    self.rpmList = []
+    self.timeDurList = []
+    self.timeStart = time.time()
+    self.currList = []
 
 
   def init_nodes(self):
@@ -86,26 +92,37 @@ class drmRT():
 
   def init_pubsub(self):
     # rospy.Subscriber('/ranger', String, self.ranger_callback)
-    rospy.Subscriber('/ranger', Float32, self.ranger_callback)
-    rospy.Subscriber('/rpm', Int16, self.rpm_callback)
-    rospy.Subscriber('/current', Float32, self.current_callback)
+    rospy.Subscriber('/ranger_pub', Float32, self.ranger_callback)
+    rospy.Subscriber('/rpm_pub', Int16, self.rpm_callback)
+    rospy.Subscriber('/current_pub', Float32, self.current_callback)
     # rospy.Subscriber('/throttle', Float32, self.thrust_callback)
     self.wr_pub = rospy.Publisher('/wbr', Float32, queue_size=1)
     self.wr_msg = Float32()
 
 
   def ranger_callback(self, msg):
-    self.cdist = msg.data
+    if msg.data == 0:
+      self.cdist = 1.0
+    else:
+      self.cdist = msg.data
     rospy.loginfo('ranger: {0:.2f} m'.format(self.cdist))
 
 
   def rpm_callback(self, msg):
-    self.rpm = msg.data
+    if msg.data == 1:
+      self.rpm = 2000
+    else:
+      self.rpm = msg.data
     rospy.loginfo('rpm: {0:.2f}'.format(self.rpm))
 
 
   def current_callback(self, msg):
-    self.current = msg.data
+    '''
+    // Scaling for power brick current sensing with arduino
+    Scaling done under topicManager script
+    '''
+    # self.current = (19.41*msg.data)-3.6384  
+    self.current = msg.data    
     rospy.loginfo('current: {0:.2f} A'.format(self.current))
 
 
@@ -122,10 +139,10 @@ class drmRT():
 
   def getMotorThrust(self):
     ''' get motor current in realtime, convert to thrust '''
-    ''' get motor throttle in realtime, convert to thrust '''
+    ## ''' get motor throttle in realtime, convert to thrust '''
     self.fit_m, self.fit_c = linear_cf.solveLinear(self.motorThrust, self.motorCurrent)
-    self.thrustEst = linear_cf.linear(self.current, self.fit_m, self.fit_c) * 4
-    # self.thrustEst = linear_cf.linear_roots(self.UAVthrust, self.fit_m, self.fit_c)
+    self.thrustEst = linear_cf.linear(self.current, self.fit_m, self.fit_c) * 4        # for current-to-thrust conversion with datasheet
+    # self.thrustEst = linear_cf.linear_roots(self.UAVthrust, self.fit_m, self.fit_c) 
 
 
   def getTotalThrust(self):
@@ -152,7 +169,7 @@ class drmRT():
   def drm(self):
     ''' for drm '''
     self.depthofCut()           # call prior function
-    if self.cdist < 0.07:
+    if self.cdist > 0.07:
       wr = 0.0
       self.max_wr = 0.01
     else:
@@ -163,32 +180,43 @@ class drmRT():
     self.norm_wr = round((wr / self.max_wr), 3)
     self.wr_msg.data = self.norm_wr
     self.wr_pub.publish(self.wr_msg)
+    self.time_now = time.time()
+    self.time_dur = self.time_now - self.timeStart
     self.dataSave()
     print('wr:', wr)
     print('max_wr: ', self.max_wr)
     print('self.norm_wr', self.norm_wr)
-    # self.plotter()
-    # self.imgPlotter()
 
 
   def dataSave(self):
     self.saveList.append(self.norm_wr)
+    self.timeDurList.append(self.time_dur)
     self.timeList.append(dt.datetime.now().strftime('%H:%M:%S'))
+    self.thrustEstList.append(self.thrustEst)
+    self.rpmList.append(self.rpm)
+    self.currList.append(float(self.current))
+    self.currentList = [(float(i)/float(max(self.currList))) for i in self.currList]
+    ## How to plot the avaerage of a list of elements?
+
 
 
   def imgPlotter(self):
     plt.figure()
-    plt.plot(self.timeList, self.saveList)
+    # plt.plot(self.timeList, self.saveList)
+    plt.plot(self.timeDurList, self.saveList)
+    plt.plot(self.timeDurList, self.currentList)
     plt.ylabel('Normalized resistance')
-    plt.xlabel('Time (HH:MM:SS)')
-    plt.title('rt-DRM')
-    plt.savefig('figure.svg', dpi=600)
+    # plt.xlabel('Time (HH:MM:SS)')
+    plt.xlabel('Duration of operation [secs]')
+    plt.title('Resistogram_rt')
+    plt.savefig('Resistogram_rt.svg', dpi=600)
+    plt.grid(axis='y')
     plt.show()
 
     with open('data.csv', 'w') as k:
       writer = csv.writer(k)
       for i in range(len(self.saveList)):
-        writer.writerow([self.saveList[i], self.timeList[i]])    
+        writer.writerow([self.saveList[i], self.timeList[i], self.thrustEstList[i], self.rpmList[i]]) 
 
 
   def plotter(self):
@@ -197,7 +225,6 @@ class drmRT():
     ax = fig.add_subplot(1,1,1)
     ani = animation.FuncAnimation(fig, self.animate, fargs=(xs, ys), interval=1000)
     plt.show()
-
 
 
   def animate(self, i, xs, ys):
@@ -219,7 +246,8 @@ class drmRT():
 
   def run_node(self):
     th.Thread(target=key_capture_thread, args=(), name='key_capture_thread', daemon=True).start()
-    while keep_going: 
+    self.timeStart = time.time()
+    while keep_going:
       self.drm()
       try:
         self.rate.sleep()
@@ -231,6 +259,7 @@ class drmRT():
 if __name__ == "__main__":
   val = float(input("Select 1: ceiling or 2: beam? \n"))
   try:
+    # time.sleep(2)
     drmRT(val)
     # rospy.spin()
   except rospy.ROSInterruptException:

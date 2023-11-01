@@ -1,10 +1,19 @@
 #! /usr/bin/env python3
+import sys
 import time
 import rospy
 import numpy as np
+import threading as th
 from std_msgs.msg import Header, Float32, Int16
 from geometry_msgs.msg import PoseStamped
 
+keep_going = True 
+flag = False
+
+def key_capture_thread():
+    global keep_going
+    input()
+    keep_going = False
 
 def powspace(start, stop, power, num):
     start = np.power(start, 1/float(power))
@@ -53,14 +62,19 @@ currto100_list = currto100.tolist()
 for i in range(1, 41):
     currentList.append(currto100_list[i])
 
+def getOut():
+    global flag
+    print(flag)
+
 
 def sender():
-    global throttleList, rpmList, rangeList
+    global throttleList, rpmList, rangeList, keep_going
+    th.Thread(target=key_capture_thread, args=(), name='key_capture_thread', daemon=True).start()
     throttle_pub = rospy.Publisher('/throttle', Float32, queue_size=10)
     rpm_pub = rospy.Publisher('/rpm', Int16, queue_size=10)
     range_pub = rospy.Publisher('/ranger', Float32, queue_size=10)
     current_pub = rospy.Publisher('/current', Float32, queue_size=10)
-    rospy.init_node('poc_sender', anonymous=True)
+    rospy.init_node('topic_sender', anonymous=True)
     throttle_msg = Float32()
     rpm_msg = Int16()
     range_msg = Float32()
@@ -68,19 +82,21 @@ def sender():
     # rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         for i in range(0,100):
-            throttle_msg.data = throttleList[i]
-            rpm_msg.data = int(rpmList[i])
-            range_msg.data = rangeList[i]
-            current_msg.data = currentList[i]
-            throttle_pub.publish(throttle_msg)
-            rpm_pub.publish(rpm_msg)
-            range_pub.publish(range_msg)
-            current_pub.publish(current_msg)
-            print('throttle: ', throttle_msg.data)
-            print('rpm: ', rpm_msg.data)
-            print('range: ', range_msg.data)
-            print('current: ', current_msg.data)
-            time.sleep(1)
+            if keep_going:
+                throttle_msg.data = throttleList[i]
+                rpm_msg.data = int(rpmList[i])
+                range_msg.data = rangeList[i]
+                current_msg.data = currentList[i]
+                throttle_pub.publish(throttle_msg)
+                rpm_pub.publish(rpm_msg)
+                range_pub.publish(range_msg)
+                current_pub.publish(current_msg)
+                print('throttle: ', throttle_msg.data)
+                print('rpm: ', rpm_msg.data)
+                print('range: ', range_msg.data)
+                print('current: ', current_msg.data)
+                time.sleep(1)
+            else: exit()
         # rospy.loginfo(pub_msg)
         # rospy.loginfo(alp_msg)
         # rate.sleep()
